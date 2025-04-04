@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MIDI File Generator</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Load Tone.js and Midi.js -->
+  <script src="https://unpkg.com/tone"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi"></script>
+</head>
+<body>
+<div class="container">
+  <h1>MIDI File Generator</h1>
+
+  <label for="key">Select Key:</label>
+  <select id="key">
+    <option value="C Major">C Major</option>
+    <option value="C# Major">C# Major</option>
+    <option value="D Major">D Major</option>
+    <option value="D# Major">D# Major</option>
+    <option value="E Major">E Major</option>
+    <option value="F Major">F Major</option>
+    <option value="F# Major">F# Major</option>
+    <option value="G Major">G Major</option>
+    <option value="A Major">A Major</option>
+    <option value="B Major">B Major</option>
+    <option value="C Minor">C Minor</option>
+    <option value="D Minor">D Minor</option>
+    <option value="E Minor">E Minor</option>
+    <option value="F Minor">F Minor</option>
+    <option value="G Minor">G Minor</option>
+  </select>
+
+  <label for="bpm">Beats Per Minute (BPM):</label>
+  <input type="number" id="bpm" value="120" />
+
+  <label for="measures">Number of Measures:</label>
+  <input type="number" id="measures" value="4" />
+
+  <label for="melody-name">Melody Name:</label>
+  <input type="text" id="melody-name" value="Melody" />
+
+  <button id="generate">Generate and Play Melody</button>
+  <button id="download">Download MIDI File</button>
+  <button id="close">Close</button>
+
+  <div id="status"></div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

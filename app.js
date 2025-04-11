@@ -1,171 +1,236 @@
-// Keep track of the melody sequences we've already generated (we'll use a Set for simplicity)
 let melodyCounter = 1;
 const savedMelodies = new Set();
 
-document.getElementById("generate").addEventListener("click", function() {
+const durationWeights = {
+    quick: { '4n': 0.5, '8n': 0.35, '2n': 0.1, '16n': 0.05 },
+    slow: { '1n': 0.1, '2n': 0.2, '4n': 0.6, '8n': 0.1 },
+    hyper: { '2n': 0.05, '4n': 0.1, '8n': 0.4, '16n': 0.45 }
+};
+
+const vexflowDurations = {
+    '1n': 'w',
+    '2n': 'h',
+    '4n': 'q',
+    '8n': '8',
+    '16n': '16',
+};
+
+document.getElementById("generate").addEventListener("click", function () {
     const key = document.getElementById("key").value;
+    const style = document.getElementById("style").value || "quick";
     const bpm = parseInt(document.getElementById("bpm").value);
     const measures = parseInt(document.getElementById("measures").value);
     let melodyName = document.getElementById("melody-name").value.trim();
 
-    // If the Melody Name is still the default value, increment the filename
     if (melodyName === "Melody") {
-        melodyName = `Melody_${melodyCounter}`;
-        melodyCounter++;  // Increment the counter for next time
+        melodyName = `Melody_${melodyCounter++}`;
     }
 
-    // Check if the input values are valid
     if (!key || !bpm || !measures || !melodyName) {
         alert("Please fill all the fields before generating the melody.");
         return;
     }
 
-    // Get the scale for the selected key
-    const scale = getScale(key);
-    const melody = generateMelody(scale, measures, bpm);
+    const scale = getFullScale(key);
+    const melody = generateMelody(scale, measures, bpm, style);
 
-    // Generate a unique identifier for this melody sequence
     const melodyIdentifier = JSON.stringify(melody);
 
-    // Check if this melody has already been saved
     if (savedMelodies.has(melodyIdentifier)) {
-        // If melody is already saved, use the same name
         document.getElementById("status").textContent = `This melody has already been generated and saved as '${melodyName}'!`;
     } else {
-        // If it's a new melody, add it to the saved set and increment the counter if needed
         savedMelodies.add(melodyIdentifier);
-
-        // Play the melody using Tone.js
         playMelody(melody, bpm);
-
-        // Update the status message
+        renderNotation(melody);
         document.getElementById("status").textContent = `Playing the melody for '${melodyName}' at ${bpm} BPM!`;
     }
 });
 
-// Function to generate a random melody within the scale
-function generateMelody(scale, numMeasures, bpm) {
-    const melody = [];
-    const totalNotes = numMeasures * 4; // 4 beats per measure (simplification)
+function getFullScale(key) {
+    const baseNote = key.split(" ")[0];
+    const isMinor = key.includes("minor");
 
-    // Generate random notes from the scale
-    for (let i = 0; i < totalNotes; i++) {
-        const note = scale[Math.floor(Math.random() * scale.length)];
-        melody.push(note);
+    const intervals = isMinor
+        ? [0, 2, 3, 5, 7, 8, 10]
+        : [0, 2, 4, 5, 7, 9, 11];
+
+    const baseMidi = Tone.Frequency(baseNote + "4").toMidi();
+    const scale = [];
+
+    [-1, 0, 1].forEach(oct => {
+        intervals.forEach(i => {
+            scale.push(Tone.Frequency(baseMidi + i + oct * 12, "midi").toNote());
+        });
+    });
+
+    return scale;
+}
+
+function generateMelody(scale, measures, bpm, style) {
+    const melody = [];
+    const totalBeats = measures * 4;
+    let currentNote = scale.find(note => note.includes("4"));
+    let currentBeat = 0;
+
+    while (currentBeat < totalBeats) {
+        let duration = getWeightedDuration(style);
+        let durBeats = Tone.Time(duration).toSeconds() / Tone.Time("4n").toSeconds();
+
+        if (currentBeat + durBeats > totalBeats) continue;
+
+        let note;
+        if (Math.random() < 1 / 12) {
+            note = "rest";
+        } else {
+            const move = Math.floor(Math.random() * 10);
+            const index = scale.indexOf(currentNote);
+
+            let newIndex = index;
+            switch (move) {
+                case 1: case 7: newIndex -= 1; break;
+                case 2: case 8: newIndex += 1; break;
+                case 3: newIndex -= 2; break;
+                case 4: newIndex += 2; break;
+                case 5: newIndex -= 3; break;
+                case 6: newIndex += 3; break;
+                case 9: break;
+                default:
+                    const randStep = Math.floor(Math.random() * 12) + 1;
+                    newIndex += Math.random() < 0.5 ? -randStep : randStep;
+                    break;
+            }
+
+            if (newIndex < 0) newIndex = 0;
+            if (newIndex >= scale.length) newIndex = scale.length - 1;
+            currentNote = scale[newIndex];
+            note = currentNote;
+        }
+
+        melody.push({ note, duration });
+        currentBeat += durBeats;
     }
 
     return melody;
 }
 
-// Function to map the key to a scale (for simplicity, using only major/minor)
-function getScale(key) {
-    const majorScale = ["C4", "D4", "E4", "F4", "G4", "A4", "B4"]; // C major scale
-    const minorScale = ["C4", "D4", "D#4", "F4", "G4", "G#4", "A#4"]; // C minor scale
-
-    if (key.includes("Major")) {
-        return majorScale;
-    } else if (key.includes("Minor")) {
-        return minorScale;
+function getWeightedDuration(style) {
+    const weights = durationWeights[style];
+    const rand = Math.random();
+    let sum = 0;
+    for (let [dur, weight] of Object.entries(weights)) {
+        sum += weight;
+        if (rand < sum) return dur;
     }
-
-    return majorScale; // Default to C Major if unknown
+    return '4n';
 }
 
-// Function to play the melody using Tone.js
 function playMelody(melody, bpm) {
     const synth = new Tone.Synth().toDestination();
-    const now = Tone.now(); // Get the current time from Tone.js
-
-    // Set the BPM using Tone.js Transport (this will control the tempo of the notes)
+    Tone.Transport.cancel();
     Tone.Transport.bpm.value = bpm;
 
-    // Calculate the time interval between each note based on the BPM
-    const interval = Tone.Time("4n").toSeconds(); // Each note is an eighth note
+    let time = Tone.now();
 
-    let time = now; // Start at the current time
-
-    // Add each note to the Tone.js Transport at the correct time
-    melody.forEach(note => {
-        // Schedule the note to be played at the given time
-        synth.triggerAttackRelease(note, "8n", time); // "8n" is an eighth note duration
-        time += interval; // Move to the next note in time
+    melody.forEach(({ note, duration }) => {
+        if (note !== "rest") {
+            synth.triggerAttackRelease(note, duration, time);
+        }
+        time += Tone.Time(duration).toSeconds();
     });
 
-    // Start the Transport to play the notes
     Tone.Transport.start();
 }
 
-// Create the MIDI file and allow the user to download it
-document.getElementById("download").addEventListener("click", function() {
+function renderNotation(melody) {
+    const VF = Vex.Flow;
+    const div = document.getElementById("notation");
+    div.innerHTML = "";
+
+    const renderer = new VF.Renderer(div, VF.Renderer.Backends.SVG);
+    renderer.resize(800, 200);
+    const context = renderer.getContext();
+
+    const stave = new VF.Stave(10, 40, 780);
+    stave.addClef("treble").addTimeSignature("4/4");
+    stave.setContext(context).draw();
+
+    const notes = melody.map(({ note, duration }) => {
+        let vfDur = vexflowDurations[duration] || 'q';
+        if (note === "rest") {
+            return new VF.StaveNote({ keys: ["b/4"], duration: vfDur + "r" });
+        }
+
+        const noteName = note.replace("#", "#/");
+        const staveNote = new VF.StaveNote({
+            keys: [noteName],
+            duration: vfDur
+        });
+
+        if (note.includes("#")) {
+            staveNote.addAccidental(0, new VF.Accidental("#"));
+        }
+
+        return staveNote;
+    });
+
+    const beams = VF.Beam.generateBeams(notes);
+    VF.Formatter.FormatAndDraw(context, stave, notes);
+    beams.forEach(beam => beam.setContext(context).draw());
+}
+
+document.getElementById("download").addEventListener("click", function () {
     const key = document.getElementById("key").value;
     const bpm = parseInt(document.getElementById("bpm").value);
     const measures = parseInt(document.getElementById("measures").value);
     let melodyName = document.getElementById("melody-name").value.trim();
 
-    // If the Melody Name is still the default value, increment the filename
     if (melodyName === "Melody") {
-        melodyName = `Melody_${melodyCounter}`;
-        melodyCounter++;  // Increment the counter for next time
+        melodyName = `Melody_${melodyCounter++}`;
     }
 
-    // Check if the input values are valid
     if (!key || !bpm || !measures || !melodyName) {
         alert("Please fill all the fields before generating the melody.");
         return;
     }
 
-    // Get the scale for the selected key
-    const scale = getScale(key);
-    const melody = generateMelody(scale, measures, bpm);
-
-    // Generate a unique identifier for this melody sequence
+    const scale = getFullScale(key);
+    const style = document.getElementById("style").value || "quick";
+    const melody = generateMelody(scale, measures, bpm, style);
     const melodyIdentifier = JSON.stringify(melody);
 
-    // Check if this melody has already been saved
-    if (savedMelodies.has(melodyIdentifier)) {
-        // If melody is already saved, use the same name
-        document.getElementById("status").textContent = `This melody has already been generated and saved as '${melodyName}'!`;
-    } else {
-        // If it's a new melody, add it to the saved set and increment the counter if needed
+    if (!savedMelodies.has(melodyIdentifier)) {
         savedMelodies.add(melodyIdentifier);
 
-        // Create a new MIDI file using @tonejs/midi
         const midi = new Midi();
-
-        // Add a track
         const track = midi.addTrack();
 
-        // Add each note to the MIDI track
-        let time = 0; // Start time
-        const interval = Tone.Time("4n").toSeconds(); // Each note is an eighth note
-
-        melody.forEach(note => {
-            const midiNote = Tone.Frequency(note).toMidi(); // Convert the note to MIDI
-            track.addNote({
-                midi: midiNote,
-                time: time, // Schedule at the current time
-                duration: interval, // Duration of the note
-            });
-            time += interval; // Move to the next note in time
+        let time = 0;
+        melody.forEach(({ note, duration }) => {
+            const durSec = Tone.Time(duration).toSeconds();
+            if (note !== "rest") {
+                track.addNote({
+                    midi: Tone.Frequency(note).toMidi(),
+                    time,
+                    duration: durSec
+                });
+            }
+            time += durSec;
         });
 
-        // Generate the MIDI file as a blob and create a download link
-        const midiData = midi.toArray(); // Convert the MIDI object to an array of bytes
+        const midiData = midi.toArray();
         const midiBlob = new Blob([midiData], { type: 'audio/midi' });
         const midiUrl = URL.createObjectURL(midiBlob);
 
-        // Create a download link
         const a = document.createElement('a');
         a.href = midiUrl;
         a.download = `${melodyName}.mid`;
         a.click();
 
-        // Update the status message
+        renderNotation(melody);
         document.getElementById("status").textContent = `MIDI file for '${melodyName}' is ready for download!`;
     }
 });
 
-// Close the window (in browser, we can just hide or do nothing)
-document.getElementById("close").addEventListener("click", function() {
+document.getElementById("close").addEventListener("click", function () {
     window.close();
 });

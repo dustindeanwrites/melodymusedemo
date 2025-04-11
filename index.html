@@ -2,16 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MIDI File Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MelodyMuse Beta2</title>
   <link rel="stylesheet" href="style.css" />
   <!-- Load Tone.js and Midi.js -->
   <script src="https://unpkg.com/tone"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi"></script>
+  <!-- Load VexFlow for notation rendering -->
+  <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
 </head>
 <body>
 <div class="container">
-  <h1>MIDI File Generator</h1>
+  <h1>MelodyMuse Beta2</h1>
 
   <label for="key">Select Key:</label>
   <select id="key">
@@ -25,11 +27,18 @@
     <option value="G Major">G Major</option>
     <option value="A Major">A Major</option>
     <option value="B Major">B Major</option>
-    <option value="C Minor">C Minor</option>
-    <option value="D Minor">D Minor</option>
-    <option value="E Minor">E Minor</option>
-    <option value="F Minor">F Minor</option>
-    <option value="G Minor">G Minor</option>
+    <option value="C minor">C minor</option>
+    <option value="D minor">D minor</option>
+    <option value="E minor">E minor</option>
+    <option value="F minor">F minor</option>
+    <option value="G minor">G minor</option>
+  </select>
+
+  <label for="style">Select Style (Optional):</label>
+  <select id="style">
+    <option value="quick">Quick and Lively</option>
+    <option value="slow">Slow and Moody</option>
+    <option value="hyper">Hyperspeed</option>
   </select>
 
   <label for="bpm">Beats Per Minute (BPM):</label>
@@ -46,6 +55,12 @@
   <button id="close">Close</button>
 
   <div id="status"></div>
+</div>
+
+<!-- Notation Rendering -->
+<div class="notation-container">
+  <h2>Melody Notation</h2>
+  <div id="notation"></div>
 </div>
 
 <script src="app.js"></script>

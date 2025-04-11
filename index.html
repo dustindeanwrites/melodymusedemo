@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MelodyMuse Beta2</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- Load Tone.js and Midi.js -->
   <script src="https://unpkg.com/tone"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi"></script>
-  <!-- Load VexFlow for notation rendering -->
-  <script src="https://unpkg.com/vexflow/releases/vexflow-min.js"></script>
 </head>
 <body>
 <div class="container">
@@ -20,24 +17,39 @@
     <option value="C Major">C Major</option>
     <option value="C# Major">C# Major</option>
     <option value="D Major">D Major</option>
-    <option value="D# Major">D# Major</option>
+    <option value="Eb Major">Eb Major</option>
     <option value="E Major">E Major</option>
     <option value="F Major">F Major</option>
     <option value="F# Major">F# Major</option>
     <option value="G Major">G Major</option>
+    <option value="Ab Major">Ab Major</option>
     <option value="A Major">A Major</option>
+    <option value="Bb Major">Bb Major</option>
     <option value="B Major">B Major</option>
+    <option value="Cb Major">Cb Major</option>
+    <option value="Db Major">Db Major</option>
+    <option value="Gb Major">Gb Major</option>
     <option value="C minor">C minor</option>
+    <option value="C# minor">C# minor</option>
     <option value="D minor">D minor</option>
+    <option value="Eb minor">Eb minor</option>
     <option value="E minor">E minor</option>
     <option value="F minor">F minor</option>
+    <option value="F# minor">F# minor</option>
     <option value="G minor">G minor</option>
+    <option value="Ab minor">Ab minor</option>
+    <option value="A minor">A minor</option>
+    <option value="Bb minor">Bb minor</option>
+    <option value="B minor">B minor</option>
+    <option value="Cb minor">Cb minor</option>
+    <option value="Db minor">Db minor</option>
+    <option value="Gb minor">Gb minor</option>
   </select>
 
   <label for="style">Select Style (Optional):</label>
   <select id="style">
     <option value="quick">Quick and Lively</option>
-    <option value="slow">Slow and Moody</option>
+    <option value="slow" selected>Slow and Moody</option>
     <option value="hyper">Hyperspeed</option>
   </select>
 
@@ -50,17 +62,14 @@
   <label for="melody-name">Melody Name:</label>
   <input type="text" id="melody-name" value="Melody" />
 
-  <button id="generate">Generate and Play Melody</button>
+  <button id="generate">Generate</button>
+  <button id="play">Play</button>
+  <button id="stop">Stop</button>
   <button id="download">Download MIDI File</button>
   <button id="close">Close</button>
 
   <div id="status"></div>
 </div>
-
-<!-- Notation Rendering -->
-<!--<div class="notation-container">-->
-<!--  <div id="notation"></div>-->
-<!--</div>-->
 
 <script src="app.js"></script>
 </body>

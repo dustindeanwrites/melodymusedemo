@@ -1,4 +1,6 @@
 let melodyCounter = 1;
+let lastBaseName = "";
+let finalMelodyName = ""; // always the active iterated name
 const savedMelodies = new Set();
 let currentMelody = [];
 let synth;
@@ -14,20 +16,37 @@ document.getElementById("generate").addEventListener("click", function () {
     const style = document.getElementById("style").value || "slow";
     const bpm = parseInt(document.getElementById("bpm").value);
     const measures = parseInt(document.getElementById("measures").value);
-    let melodyName = document.getElementById("melody-name").value.trim();
+    let userInputName = document.getElementById("melody-name").value.trim();
 
-    if (melodyName === "Melody") {
-        melodyName = `Melody_${melodyCounter++}`;
-    }
-
-    if (!key || !bpm || !measures || !melodyName) {
+    if (!key || !bpm || !measures || !userInputName) {
         alert("Please fill all the fields before generating the melody.");
         return;
     }
 
+    // 🔑 Extract the true base name (remove any "_number" suffix)
+    const baseName = userInputName.replace(/_\d+$/, "");
+
+    // Compare to last base name
+    if (baseName === lastBaseName) {
+        melodyCounter++;
+    } else {
+        lastBaseName = baseName;
+        melodyCounter = 1;
+    }
+
+    // Build final name
+    finalMelodyName = melodyCounter === 1
+      ? lastBaseName
+      : `${lastBaseName}_${melodyCounter}`;
+
+    // Update input field
+    document.getElementById("melody-name").value = finalMelodyName;
+
     const scale = getFullScale(key);
     currentMelody = generateMelody(scale, measures, bpm, style, key);
-    document.getElementById("status").textContent = `Melody '${melodyName}' generated at ${bpm} BPM. Click play to listen!`;
+
+    document.getElementById("status").textContent =
+      `Melody '${finalMelodyName}' generated at ${bpm} BPM. Click play to listen!`;
 });
 
 document.getElementById("play").addEventListener("click", function () {
@@ -46,12 +65,12 @@ document.getElementById("stop").addEventListener("click", function () {
 });
 
 document.getElementById("download").addEventListener("click", function () {
-    const key = document.getElementById("key").value;
-    const bpm = parseInt(document.getElementById("bpm").value);
-    let melodyName = document.getElementById("melody-name").value.trim();
-    if (melodyName === "Melody") {
-        melodyName = `Melody_${melodyCounter++}`;
+    if (!finalMelodyName) {
+        alert("Please generate a melody before downloading.");
+        return;
     }
+
+    const bpm = parseInt(document.getElementById("bpm").value);
 
     const midi = new Midi();
     const track = midi.addTrack();
@@ -75,10 +94,10 @@ document.getElementById("download").addEventListener("click", function () {
 
     const a = document.createElement('a');
     a.href = midiUrl;
-    a.download = `${melodyName}.mid`;
+    a.download = `${finalMelodyName}.mid`;
     a.click();
 
-    document.getElementById("status").textContent = `Downloaded MIDI for '${melodyName}'`;
+    document.getElementById("status").textContent = `Downloaded MIDI for '${finalMelodyName}'`;
 });
 
 document.getElementById("close").addEventListener("click", function () {
@@ -89,8 +108,8 @@ function getFullScale(key) {
     const baseNote = key.split(" ")[0];
     const isMinor = key.includes("minor");
     const intervals = isMinor
-        ? [0, 2, 3, 5, 7, 8, 10]
-        : [0, 2, 4, 5, 7, 9, 11];
+      ? [0, 2, 3, 5, 7, 8, 10]
+      : [0, 2, 4, 5, 7, 9, 11];
 
     const baseMidi = Tone.Frequency(baseNote + "4").toMidi();
     const scale = [];
